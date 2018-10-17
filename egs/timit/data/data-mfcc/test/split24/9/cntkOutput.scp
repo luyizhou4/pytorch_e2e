@@ -1,0 +1,1 @@
+ark:apply-cmvn --utt2spk=ark:data//test/split24/9/utt2spk scp:data//test/split24/9/cmvn.scp scp:data//test/split24/9/feats.scp ark:- | add-deltas ark:- ark:- |

@@ -1,0 +1,1 @@
+由于timit数据只用于测试，出于简便的考虑data-mfcc直接从实验室data下copy过来
