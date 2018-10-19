@@ -1,0 +1,6 @@
+yizhoudeMacBook-Pro.local
+2018-10-18 13:56:21,182 (train:33) INFO: reading configfile: ./configfile/debug.cfg...
+2018-10-18 13:56:21,182 (train:56) INFO: ngpu=0
+2018-10-18 13:56:21,182 (train:56) INFO: random_seed=-1
+2018-10-18 13:56:21,182 (train:57) INFO: ================================================================================
+

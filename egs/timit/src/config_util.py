@@ -20,20 +20,17 @@ import os
 import re
 import sys
 import subprocess
+import logging
 
-if sys.version_info >= (3, 0):
-    import configparser
-else:
-    import ConfigParser as configparser
+import ConfigParser
 
 def parse_args(file_path):
-    default_cfg = configparser.ConfigParser()
-    print("[    INFO] " + "reading configfile: " + file_path + "...")
+    default_cfg = ConfigParser.ConfigParser()
+    logging.info("reading configfile: " + file_path + "...")
     default_cfg.read(file_path)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--configfile", help="config file")
-    parser.add_argument("--archfile", help="symbol architecture template file")
     # those allow us to overwrite the configs through command line
     # egs: --common_mode
     for sec in default_cfg.sections():
@@ -48,8 +45,7 @@ def parse_args(file_path):
         default_cfg.read(args.configfile)
     else:
         raise Exception('cfg file path must be provided. ' +
-                        'ex)python main.py --configfile examplecfg.cfg' +
-                        '(warning)--configfile examplecfg.cfg must be the first argument')
+                        'ex)python main.py --configfile examplecfg.cfg')
 
     # now overwrite config from command line options
     for sec in default_cfg.sections():
@@ -68,13 +64,6 @@ def parse_args(file_path):
     args.config = default_cfg
     sys.stderr.write("=" * 80 + "\n")
 
-    # set archfile to read template of network
-    if args.archfile is not None:
-        # now read the user supplied config file to overwrite some values
-        args.config.set('arch', 'arch_file', args.archfile)
-    else:
-        # deep speech architecture
-        args.config.set('arch', 'arch_file', 'arch_deepspeech')
     return args
 
 def generate_file_path(save_dir, model_name, postfix):
