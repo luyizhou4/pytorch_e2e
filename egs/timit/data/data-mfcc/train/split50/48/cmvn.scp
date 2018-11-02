@@ -1,9 +1,0 @@
-mtmn0 /mnt/lustre/sjtu/shared/data/asr/am/timit/kaldi/mfcc/cmvn_train.ark:106581
-mtmt0 /mnt/lustre/sjtu/shared/data/asr/am/timit/kaldi/mfcc/cmvn_train.ark:106826
-mtpf0 /mnt/lustre/sjtu/shared/data/asr/am/timit/kaldi/mfcc/cmvn_train.ark:107071
-mtpg0 /mnt/lustre/sjtu/shared/data/asr/am/timit/kaldi/mfcc/cmvn_train.ark:107316
-mtpp0 /mnt/lustre/sjtu/shared/data/asr/am/timit/kaldi/mfcc/cmvn_train.ark:107561
-mtpr0 /mnt/lustre/sjtu/shared/data/asr/am/timit/kaldi/mfcc/cmvn_train.ark:107806
-mtqc0 /mnt/lustre/sjtu/shared/data/asr/am/timit/kaldi/mfcc/cmvn_train.ark:108051
-mtrc0 /mnt/lustre/sjtu/shared/data/asr/am/timit/kaldi/mfcc/cmvn_train.ark:108296
-mtrr0 /mnt/lustre/sjtu/shared/data/asr/am/timit/kaldi/mfcc/cmvn_train.ark:108541

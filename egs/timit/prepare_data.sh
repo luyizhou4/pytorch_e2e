@@ -5,13 +5,13 @@
 
 [ -f path.sh ] && . ./path.sh
 
-data_root="./data/data-mfcc/"
+data_root="./data/mfcc_data/"
 
-mapping_dict="./data/dict/phone_map.map"
+mapping_dict="./data/48-39.phone.map"
 dict_root="./data/dict/"
 mkdir -p $dict_root
 
-stage=1
+stage=0
 
 # prepare dict
 if [ ${stage} -le 0 ]; then
@@ -31,9 +31,9 @@ if [ ${stage} -le 0 ]; then
     python -u ./utils/create_dict.py ${data_root}/train/text.39phone ${dict_root}/phone_dict.txt
 fi
 
-json_dir='./data/json/'
+json_dir='./data/mfcc_json/'
 mkdir -p ${json_dir}
-# prepare json files similar to espnet
+# prepare json files similar to espnet, note that for timit, the text.39phone generated above is used
 if [ ${stage} -le 1 ]; then
     for data_set in train dev test; do
         python -u ./utils/create_json.py ${data_root}/${data_set} ${dict_root}/phone_dict.txt ${json_dir}/${data_set}.json 

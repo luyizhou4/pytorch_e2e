@@ -1,8 +1,0 @@
-mjln0_si1449 /speechlab/tools/KALDI/kaldi-master//tools/sph2pipe_v2.5/sph2pipe -f wav /mnt/lustre/sjtu/shared/data/asr/rawdata/TIMIT/timit//test/dr8/mjln0/si1449.wav |
-mjln0_si2079 /speechlab/tools/KALDI/kaldi-master//tools/sph2pipe_v2.5/sph2pipe -f wav /mnt/lustre/sjtu/shared/data/asr/rawdata/TIMIT/timit//test/dr8/mjln0/si2079.wav |
-mjln0_si819 /speechlab/tools/KALDI/kaldi-master//tools/sph2pipe_v2.5/sph2pipe -f wav /mnt/lustre/sjtu/shared/data/asr/rawdata/TIMIT/timit//test/dr8/mjln0/si819.wav |
-mjln0_sx189 /speechlab/tools/KALDI/kaldi-master//tools/sph2pipe_v2.5/sph2pipe -f wav /mnt/lustre/sjtu/shared/data/asr/rawdata/TIMIT/timit//test/dr8/mjln0/sx189.wav |
-mjln0_sx279 /speechlab/tools/KALDI/kaldi-master//tools/sph2pipe_v2.5/sph2pipe -f wav /mnt/lustre/sjtu/shared/data/asr/rawdata/TIMIT/timit//test/dr8/mjln0/sx279.wav |
-mjln0_sx369 /speechlab/tools/KALDI/kaldi-master//tools/sph2pipe_v2.5/sph2pipe -f wav /mnt/lustre/sjtu/shared/data/asr/rawdata/TIMIT/timit//test/dr8/mjln0/sx369.wav |
-mjln0_sx9 /speechlab/tools/KALDI/kaldi-master//tools/sph2pipe_v2.5/sph2pipe -f wav /mnt/lustre/sjtu/shared/data/asr/rawdata/TIMIT/timit//test/dr8/mjln0/sx9.wav |
-mjln0_sx99 /speechlab/tools/KALDI/kaldi-master//tools/sph2pipe_v2.5/sph2pipe -f wav /mnt/lustre/sjtu/shared/data/asr/rawdata/TIMIT/timit//test/dr8/mjln0/sx99.wav |

@@ -14,6 +14,11 @@ mkdir -p ${exp_dir}
 cfg_file="./configfile/debug.cfg"
 cp ${cfg_file} $exp_dir/ # record the cfg file
 
+### !!!dangerous
+##########################
+rm $exp_dir/train.log
+#########################
+
 touch $exp_dir/train.log
 hostname | tee -a $exp_dir/train.log
 # nvidia-smi | tee -a $gpu_info

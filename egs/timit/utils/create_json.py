@@ -5,11 +5,11 @@
 #            $1 is the ${data_root}/${data_set}, ${data_set}=train/dev/test
 #            $2 is the dict
 #            $3 is the output json file            
-# @Last Modified time: 2018-10-19 19:58:42
+# @Last Modified time: 2018-10-19 20:06:16
 
 import sys
 import json
-# import kaldi_io
+import kaldi_io
 
 class utterance_obj(object):
     def __init__(self, id_, input_=[], output_=[]):
@@ -60,11 +60,11 @@ def main():
                 # now by default the speed is 1.0, further we'll implement speed perturb
                 speed = 1.0
                 feat = scp_list[1]
-                # feat_array = kaldi_io.read_mat(feat)
-                # shape = list(feat_array.shape)
 
+                feat_array = kaldi_io.read_mat(feat)
+                shape = list(feat_array.shape)
                 # debug data
-                shape = list((-1,-1))
+                # shape = list((-1,-1))
 
                 input_map['speed'] = speed
                 input_map['feat'] = feat
