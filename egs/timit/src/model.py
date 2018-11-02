@@ -2,7 +2,7 @@
 # @Author: luyizhou4
 # @Date:   2018-10-24 15:24:44
 # @Function:            
-# @Last Modified time: 2018-11-02 14:58:04
+# @Last Modified time: 2018-11-02 16:22:04
 
 import numpy as np
 import torch
@@ -10,6 +10,7 @@ import warpctc_pytorch as warp_ctc
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
 import logging
+import math
 
 def to_cuda(m, x):
     """Function to send tensor into corresponding device
@@ -98,6 +99,21 @@ class CTCArch(torch.nn.Module):
             # ys_hat: shape of seqLength x batchSize x alphabet_size
             # hlens: tensor of (batch, )
             return (ys_hat, hlens, self.loss)
+
+    def init_params(self):
+        for p in self.parameters():
+            data = p.data
+            if data.dim() == 1:
+                # bias
+                data.zero_()
+            elif data.dim() == 2:
+                # linear weight
+                n = data.size(1)
+                stdv = 1. / math.sqrt(n)
+                data.normal_(0, stdv)
+                # data.normal_(0, 1)
+            else:
+                raise NotImplementedError
 
     @staticmethod
     def get_param_size(model):

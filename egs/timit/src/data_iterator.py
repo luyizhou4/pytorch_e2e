@@ -2,7 +2,7 @@
 # @Author: luyizhou4
 # @Date:   2018-10-24 16:01:47
 # @Function:            
-# @Last Modified time: 2018-11-02 12:45:30
+# @Last Modified time: 2018-11-02 16:20:12
 
 import json
 import random
@@ -19,7 +19,7 @@ from torch.utils.data.sampler import Sampler
 class JsonDataset(Dataset):
     """json_file dataset."""
 
-    def __init__(self, json_path, dataset_type, sorted_type='random', delta_feats_num=2):
+    def __init__(self, json_path, dataset_type, sorted_type='random', delta_feats_num=2, normalized=True):
         """
         Args:
             json_file (string): Path to the json file.
@@ -31,7 +31,7 @@ class JsonDataset(Dataset):
                 delta_feats_num <= -1:
             raise ValueError("delta_feats_num should be a positive integeral value or zero, "
                              "but got delta_feats_num={}".format(batch_size))
-
+        self.normalized = normalized
         with open(json_path, 'rb') as f:
             data = json.load(f)
         self.utt_num = len(data)
@@ -74,6 +74,10 @@ class JsonDataset(Dataset):
                 delta_feats = self.delta(utt_feats[i],N=2)
                 utt_feats.append(delta_feats)
             utt_feats = np.concatenate(utt_feats, axis=1)
+
+        if self.normalized:
+            # FLAG:should do in the train dataset with kaldi
+            utt_feats = (utt_feats - np.mean(utt_feats,axis=0))/np.std(utt_feats,axis=0)
         transcript_ids = map(int, utt_infos[1]['output'][0]['token_id'].strip().split())
         return (utt_id, utt_feats, transcript_ids)
 

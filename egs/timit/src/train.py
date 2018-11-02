@@ -19,9 +19,6 @@ from data_iterator import JsonDataset, SimpleBatchSampler, SequentialSampler, E2
 from model import CTCArch
 from metric_utils import CER
 
-def init_weights(m):
-    
-
 def asr_train(args):
     train_json_path = args.cfg.get('data', 'train_json')
     dev_json_path = args.cfg.get('data', 'dev_json')
@@ -78,12 +75,14 @@ def asr_train(args):
     elif optimizer_type == 'Adadelta':
         optimizer = torch.optim.Adadelta(model.parameters())
     elif optimizer_type == 'adam':
-        optimizer = torch.optim.Adam(model.parameters, lr=args.cfg.getfloat('optimizer', 'lr'))
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.cfg.getfloat('optimizer', 'lr'))
 
     # set torch device
     device = torch.device("cuda" if args.cfg.getint('common', 'ngpu') > 0 else "cpu")
     model = model.to(device)
 
+    # init models
+    model.init_params()
     # start training
     logging.info(model)
     logging.info("Number of parameters: %d" % CTCArch.get_param_size(model))
