@@ -16,7 +16,7 @@ import time
 from torch.utils.data import DataLoader
 
 from data_iterator import JsonDataset, SimpleBatchSampler, SequentialSampler, E2EDataLoader
-from model import CTCArch
+from model import TIMITArch
 from metric_utils import CER
 
 def asr_train(args):
@@ -28,15 +28,16 @@ def asr_train(args):
     num_workers = args.cfg.getint('data', 'num_workers')
     
     # prepare data iterator for train dataset
-    train_dataset = JsonDataset(train_json_path, dataset_type='train', sorted_type='ascending', delta_feats_num=delta_feats_num)
-    train_sampler = SimpleBatchSampler(sampler=SequentialSampler(train_dataset), 
+    train_dataset = JsonDataset(train_json_path, dataset_type='train', sorted_type='random', delta_feats_num=delta_feats_num, normalized=True)
+    train_sequential_sampler = SequentialSampler(train_dataset)
+    train_sampler = SimpleBatchSampler(sampler=train_sequential_sampler, 
                                     batch_size=batch_size,
                                     drop_last=False)
     train_data_loader = E2EDataLoader(dataset=train_dataset, 
                                     batch_sampler=train_sampler,
                                     num_workers=num_workers)
     # prepare data iterator for dev set
-    dev_dataset = JsonDataset(dev_json_path, dataset_type='dev', sorted_type='random', delta_feats_num=delta_feats_num)
+    dev_dataset = JsonDataset(dev_json_path, dataset_type='dev', sorted_type='random', delta_feats_num=delta_feats_num, normalized=True)
     dev_sampler = SimpleBatchSampler(sampler=SequentialSampler(dev_dataset), 
                                     batch_size=batch_size,
                                     drop_last=False)
@@ -44,7 +45,7 @@ def asr_train(args):
                                     batch_sampler=dev_sampler,
                                     num_workers=num_workers)
     # test data set 
-    test_dataset = JsonDataset(test_json_path, dataset_type='test', sorted_type='random', delta_feats_num=delta_feats_num)
+    test_dataset = JsonDataset(test_json_path, dataset_type='test', sorted_type='random', delta_feats_num=delta_feats_num, normalized=True)
     test_sampler = SimpleBatchSampler(sampler=SequentialSampler(test_dataset), 
                                     batch_size=batch_size,
                                     drop_last=False)
@@ -60,7 +61,7 @@ def asr_train(args):
     dropout_rate = args.cfg.getfloat('model', 'dropout_rate')
 
     # construct models
-    model = CTCArch(idim= idim, 
+    model = TIMITArch(idim= idim, 
                     hidden_dim=hidden_dim, 
                     hidden_layers=hidden_layer, 
                     odim=odim, 
@@ -72,20 +73,19 @@ def asr_train(args):
         optimizer = torch.optim.SGD(model.parameters(), lr=args.cfg.getfloat('optimizer', 'lr'),
                             momentum=args.cfg.getfloat('optimizer', 'momentum'), 
                             nesterov=args.cfg.getboolean('optimizer', 'nesterov'))
-    elif optimizer_type == 'Adadelta':
+    elif optimizer_type == 'adadelta':
         optimizer = torch.optim.Adadelta(model.parameters())
     elif optimizer_type == 'adam':
         optimizer = torch.optim.Adam(model.parameters(), lr=args.cfg.getfloat('optimizer', 'lr'))
 
+    # init models
+    model.init_params()
     # set torch device
     device = torch.device("cuda" if args.cfg.getint('common', 'ngpu') > 0 else "cpu")
     model = model.to(device)
-
-    # init models
-    model.init_params()
     # start training
     logging.info(model)
-    logging.info("Number of parameters: %d" % CTCArch.get_param_size(model))
+    logging.info("Number of parameters: %d" % model.get_param_size(model))
     for epoch_i in range(args.cfg.getint('train', 'epoch_num')):
         # training part
         train_start_time = time.time()
@@ -106,6 +106,8 @@ def asr_train(args):
         logging.info("epoch %d completed in %.2f s"%(epoch_i, time.time()-train_start_time))
         logging.info("epoch %d: train loss: %f"%(epoch_i, train_loss))
         print("epoch %d: train loss: %f"%(epoch_i, train_loss))
+        # shuffle dataset
+        train_sequential_sampler.shuffle()
 
         # dev part
         model.eval()
@@ -126,7 +128,7 @@ def asr_train(args):
                 dev_loss_value = loss.item()
                 dev_loss += 1.0 * dev_loss_value / dev_dataset.__len__()
                 # given ys_hat and targets, evaluate the model
-                batch_l_dist, batch_n_token = CER(targets, ys_hat, lens, show_results=show_results, show_num=dev_show_num)
+                batch_l_dist, batch_n_token = CER(targets, ys_hat.cpu(), lens.cpu(), show_results=show_results, show_num=dev_show_num)
                 dev_total_l_dist += batch_l_dist
                 dev_total_n_token += batch_n_token
 
@@ -134,7 +136,7 @@ def asr_train(args):
         logging.info("dev_total_l_dist: %d, dev_total_n_token: %d, dev CER: %f"%(dev_total_l_dist, dev_total_n_token,
                                         1.0*dev_total_l_dist/dev_total_n_token))
         print("epoch %d: dev loss: %f"%(epoch_i, dev_loss))
-        print("dev CER: %f"%(1.0*dev_total_l_dist/dev_total_n_token))
+        print("epoch %d: dev CER: %f"%(epoch_i, 1.0*dev_total_l_dist/dev_total_n_token))
 
         # test part
         model.eval()
@@ -148,12 +150,12 @@ def asr_train(args):
                 ys_hat, lens, loss = model(inputs, inputs_raw_length, targets)
 
                 # given ys_hat and targets, evaluate the model
-                batch_l_dist, batch_n_token = CER(targets, ys_hat, lens)
+                batch_l_dist, batch_n_token = CER(targets, ys_hat.cpu(), lens.cpu())
                 test_total_l_dist += batch_l_dist
                 test_total_n_token += batch_n_token
         logging.info("test_total_l_dist: %d, test_total_n_token: %d, eval CER: %f"%(test_total_l_dist, test_total_n_token,
                                         1.0*test_total_l_dist/test_total_n_token))
-        print("eval CER: %f"%(1.0*test_total_l_dist/test_total_n_token))
+        print("epoch %d: eval CER: %f"%(epoch_i, 1.0*test_total_l_dist/test_total_n_token))
 
 def main():
     parser = argparse.ArgumentParser()
@@ -190,7 +192,7 @@ def main():
         cvd = os.environ.get("CUDA_VISIBLE_DEVICES")
         if cvd is None:
             logging.warn("CUDA_VISIBLE_DEVICES is not set.")
-        elif args.ngpu != len(cvd.split(",")):
+        elif ngpu != len(cvd.split(",")):
             logging.error("#gpus is not matched with CUDA_VISIBLE_DEVICES.")
             sys.exit(1)
     # check cuda availability

@@ -2,7 +2,7 @@
 # @Author: luyizhou4
 # @Date:   2018-10-24 16:01:47
 # @Function:            
-# @Last Modified time: 2018-11-02 16:20:12
+# @Last Modified time: 2018-11-04 13:26:20
 
 import json
 import random
@@ -31,6 +31,7 @@ class JsonDataset(Dataset):
                 delta_feats_num <= -1:
             raise ValueError("delta_feats_num should be a positive integeral value or zero, "
                              "but got delta_feats_num={}".format(batch_size))
+        self.dataset_type = dataset_type
         self.normalized = normalized
         with open(json_path, 'rb') as f:
             data = json.load(f)
@@ -78,6 +79,11 @@ class JsonDataset(Dataset):
         if self.normalized:
             # FLAG:should do in the train dataset with kaldi
             utt_feats = (utt_feats - np.mean(utt_feats,axis=0))/np.std(utt_feats,axis=0)
+
+        # add gaussian noise
+        if self.dataset_type == 'train':
+            utt_feats = np.add(utt_feats, np.random.normal(0,0.6,utt_feats.shape))
+
         transcript_ids = map(int, utt_infos[1]['output'][0]['token_id'].strip().split())
         return (utt_id, utt_feats, transcript_ids)
 
@@ -107,12 +113,16 @@ class SequentialSampler(Sampler):
 
     def __init__(self, data_source):
         self.data_source = data_source
+        self.bins = range(len(self.data_source))
 
     def __iter__(self):
-        return iter(range(len(self.data_source)))
+        return iter(self.bins)
 
     def __len__(self):
         return len(self.data_source)
+
+    def shuffle(self):
+        random.shuffle(self.bins)
 
 class SimpleBatchSampler(Sampler):
     ''' 

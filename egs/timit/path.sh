@@ -1,4 +1,5 @@
 # # use esepnet environment
-# . /mnt/lustre/sjtu/users/yzl23/work_dir/espnet_exp/espnet/tools/venv/bin/activate 
+. /mnt/lustre/sjtu/users/yzl23/work_dir/espnet_exp/espnet/tools/venv/bin/activate 
 
-source activate e2e_pytorch
+# macbook environment
+# source activate e2e_pytorch
