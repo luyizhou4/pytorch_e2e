@@ -133,10 +133,10 @@ def asr_train(args):
                 dev_total_n_token += batch_n_token
 
         logging.info("epoch %d: dev loss: %f"%(epoch_i, dev_loss))
-        logging.info("dev_total_l_dist: %d, dev_total_n_token: %d, dev CER: %f"%(dev_total_l_dist, dev_total_n_token,
+        logging.info("dev_total_l_dist: %d, dev_total_n_token: %d, dev PER: %f"%(dev_total_l_dist, dev_total_n_token,
                                         1.0*dev_total_l_dist/dev_total_n_token))
         print("epoch %d: dev loss: %f"%(epoch_i, dev_loss))
-        print("epoch %d: dev CER: %f"%(epoch_i, 1.0*dev_total_l_dist/dev_total_n_token))
+        print("epoch %d: dev PER: %f"%(epoch_i, 1.0*dev_total_l_dist/dev_total_n_token))
 
         # test part
         model.eval()
@@ -153,9 +153,9 @@ def asr_train(args):
                 batch_l_dist, batch_n_token = CER(targets, ys_hat.cpu(), lens.cpu())
                 test_total_l_dist += batch_l_dist
                 test_total_n_token += batch_n_token
-        logging.info("test_total_l_dist: %d, test_total_n_token: %d, eval CER: %f"%(test_total_l_dist, test_total_n_token,
+        logging.info("test_total_l_dist: %d, test_total_n_token: %d, eval PER: %f"%(test_total_l_dist, test_total_n_token,
                                         1.0*test_total_l_dist/test_total_n_token))
-        print("epoch %d: eval CER: %f"%(epoch_i, 1.0*test_total_l_dist/test_total_n_token))
+        print("epoch %d: eval PER: %f"%(epoch_i, 1.0*test_total_l_dist/test_total_n_token))
 
 def main():
     parser = argparse.ArgumentParser()
