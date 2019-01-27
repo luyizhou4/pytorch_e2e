@@ -2,7 +2,7 @@
 # @Author: luyizhou4
 # @Date:   2019-01-21 18:26:26
 # @Function: decoding            
-# @Last Modified time: 2019-01-27 16:21:33
+# @Last Modified time: 2019-01-27 20:04:56
 
 import os
 import sys
@@ -14,11 +14,13 @@ import numpy as np
 import random
 import json
 import time
+import kaldi_io
+
 from torch.utils.data import DataLoader
 
 from data_iterator import JsonDataset, SimpleBatchSampler, SequentialSampler, E2EDataLoader
 from model import TIMITArch
-from metric_utils import CER, plot_peak_property, prefix_search_CER
+from metric_utils import CER, plot_peak_property, prefix_search_CER, softmax
 
 def asr_predict(args):
     Plot_figure = False # plot peak_property figures
@@ -114,18 +116,29 @@ def asr_predict(args):
         # test part
         test_total_l_dist = 0
         test_total_n_token = 0
+        # w_fd = kaldi_io.open_or_fd('./data/test_preds.ark','wb')
         with torch.no_grad():
             for i, (data) in enumerate(test_data_loader):
                 if i == len(test_sampler):
                     break
                 inputs, targets, inputs_raw_length, targets_raw_length, utt_ids = data
                 ys_hat, lens, loss = model(inputs, inputs_raw_length, targets)
+                
+                # write ark files
+                # preds = ys_hat.cpu()
+                # preds = softmax(preds.transpose(0, 1).numpy())
+                # preds_lens = lens.cpu().numpy()
+                # for utt_i in range(len(utt_ids)):
+                #     kaldi_io.write_mat(w_fd, preds[utt_i, :preds_lens[utt_i], :], utt_ids[utt_i])
 
                 # given ys_hat and targets, evaluate the model
                 print('test batch %d decoding:'%(i))
-                batch_l_dist, batch_n_token = CER(targets, ys_hat.cpu(), lens.cpu())
+                print(utt_ids)
+                batch_l_dist, batch_n_token = prefix_search_CER(targets, ys_hat.cpu(), lens.cpu())
                 test_total_l_dist += batch_l_dist
                 test_total_n_token += batch_n_token
+        
+        # w_fd.close()
         logging.info("test_total_l_dist: %d, test_total_n_token: %d, eval PER: %f"%(test_total_l_dist, test_total_n_token,
                                         1.0*test_total_l_dist/test_total_n_token))
         print("eval PER: %f"%(1.0*test_total_l_dist/test_total_n_token))

@@ -2,7 +2,7 @@
 # @Author: luyizhou4
 # @Date:   2018-11-01 17:32:14
 # @Function: metirc function caculating PER/CER/WER            
-# @Last Modified time: 2019-01-27 16:20:39
+# @Last Modified time: 2019-01-27 20:39:57
 
 import torch
 import numpy as np
@@ -12,6 +12,10 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from numpy import newaxis
+import time
+
+# test package
+import kaldi_io
 
 def softmax(x):
     """Compute softmax values for each sets of scores in x."""
@@ -229,13 +233,14 @@ def prefix_search_decoding(preds):
                 break;
 
         # remove p_star from P
-        if p_star in P:
-            del P[p_star]
+        del P[p_star]
         # print('res')
         # print(l_star)
         # print(p_star)
         if P:
             p_star = max(P,key=P.get)
+        else:
+            break;
 
     return l_star
 
@@ -248,7 +253,7 @@ def heuristic_split_prefix_search_decoding(preds, thres=0.9):
     T, alphabet_size = preds.shape
 
     # split sequence into 3 subsequences, splitting points should be roughly placed at 1/3 and 2/3
-    splitTargets = [int(T * 1 / 4), int(T * 2 / 4), int(T * 3 / 4)]
+    splitTargets = [int(T * 1 / 6), int(T * 2 / 6), int(T * 3 / 6), int(T * 4 / 6), int(T * 5 / 6)]
     best = [{'target' : s, 'bestDist' : T, 'bestIdx' : s} for s in splitTargets]
 
     # find good splitting points (blanks above threshold, closest to uniformly divided points)
@@ -268,7 +273,45 @@ def heuristic_split_prefix_search_decoding(preds, thres=0.9):
         beg = ranges[i]
         end = ranges[i + 1]
         res.extend( map( int, prefix_search_decoding(preds[beg:end, :]).split() ) )
-    # print(res)
+    print(res)
+    return res
+
+# improved heuristic_split_prefix_search_decoding algorithm, accelerate the initial algorithm a bit
+def heuristic_split_prefix_search_decoding2(preds, thres=0.9):
+    '''
+        speed up prefix computation by splitting sequence into subsequences as described by Graves 
+    '''
+    T, alphabet_size = preds.shape
+
+    # find proper split points
+    split_points = []
+    last_split_point = 0
+    for t in range(1, T): # except t=0
+        if preds[t, 0] > thres and (t - last_split_point) > 50:
+            if (t - last_split_point) < 100:
+                split_points.append(t)
+
+            else:
+                # forcely add uniformly distributed points
+                forcely_added_num = (t - last_split_point) // 100
+                step = (t - last_split_point) // (forcely_added_num + 1)
+                for i in range(forcely_added_num):
+                    split_points.append(last_split_point + step)
+                split_points.append(t)
+
+            last_split_point = t
+
+
+    # splitting points plus begin and end of sequence
+    ranges = [0] + split_points + [T]
+
+    # do prefix search for each subsequence and concatenate results
+    res = []
+    for i in range(len(ranges) - 1):
+        beg = ranges[i]
+        end = ranges[i + 1]
+        res.extend( map( int, prefix_search_decoding(preds[beg:end, :]).split() ) )
+    print(res)
     return res
 
 # prefix search decoding
@@ -297,7 +340,7 @@ def prefix_search_CER(labels, preds, preds_lens, show_results=False, show_num=0)
             continue        
         batch_n_token += len(l)
         # print("label length: "+str(len(l)))
-        p = heuristic_split_prefix_search_decoding(preds[i,:preds_lens[i],:])
+        p = heuristic_split_prefix_search_decoding2(preds[i,:preds_lens[i],:])
         # print(p)
         l_distance = levenshtein_distance(l, p)
         # print("l_distance: "+str(l_distance))
@@ -316,8 +359,8 @@ def prefix_search_CER(labels, preds, preds_lens, show_results=False, show_num=0)
     return batch_l_dist, batch_n_token
 
 
-
-def main():
+def unit_test_from_txt():
+    # online decoding
     preds = np.loadtxt('./data/preds.txt')
     labels = np.loadtxt('./data/labels.txt').astype(int).tolist()
     p = np.argmax(preds[:,:], axis=1).tolist()
@@ -343,6 +386,22 @@ def main():
     l_distance = levenshtein_distance(l, prefix_out)
     cer = 1.0 * l_distance / len(l)
     print('levenshtein_distance: %d, label length %d, CER: %f'%(l_distance, len(l), cer))
+
+def main():
+    # unit_test_from_txt()
+
+    preds = kaldi_io.read_mat('./data/test.ark:1870054')
+    labels = map(int, "31 17 23 37 13 31 19 23 17 31 15 25 30 18 13 30 17 23 29 31 9 18 17 23 31 8 17 29 31 32 28 18 31 6 1 28 31 15 17 23 39 11 39 13 38 35 23 17 37 17 9 17 29 17 24 31 15 21 38 35 23 \
+                38 17 23 31".split())
+    print("labels:")
+    print(labels)
+    train_start_time = time.time()
+    res = heuristic_split_prefix_search_decoding(preds)
+    print("initial algorithm time:%f"%(time.time() - train_start_time))
+
+    train_start_time = time.time()
+    res2 = heuristic_split_prefix_search_decoding2(preds)
+    print("new algorithm time:%f"%(time.time() - train_start_time))
 
 if __name__ == '__main__':
     main()
