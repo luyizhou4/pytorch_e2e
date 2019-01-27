@@ -2,7 +2,7 @@
 # @Author: luyizhou4
 # @Date:   2018-10-24 15:24:44
 # @Function:            
-# @Last Modified time: 2018-11-04 13:29:36
+# @Last Modified time: 2019-01-25 11:48:51
 
 import numpy as np
 import torch
@@ -71,19 +71,18 @@ class TIMITArch(torch.nn.Module):
             hs_pad.contiguous().view(-1, hs_pad.size(2)))
         
         # output layer and CTC forward part, the results of blstm is hs_pad with lens: hlens
+        # expected ys_hat shape of seqLength x batchSize x alphabet_size
         ys_hat = projected.view(hs_pad.size(0), hs_pad.size(1), -1)
-        # expected shape of seqLength x batchSize x alphabet_size
         ys_hat = ys_hat.transpose(0, 1)
-        # input true lens, tensor of (batch, )
+        # input true lens, tensor of (batch, ), transform the initial tensor to torch.int32 tensor
         hlens = torch.from_numpy(np.fromiter(hlens, dtype=np.int32))
-
         # parse padded ys, each y is a (label_dim, ) tensor, retun list of tensor y
-        ys = [y[y != self.ignore_id] for y in ys_pad]  
+        ys = [y[y != self.ignore_id] for y in ys_pad]
         # output true lens
         olens = torch.from_numpy(np.fromiter(
             (y.size(0) for y in ys), dtype=np.int32))
-        # change ys_pad to one-dimensional
-        ys_true = torch.cat(ys).cpu().int()  # batch x olen
+        # change ys to one-dimensional
+        ys_true = torch.cat(ys).cpu().int()
 
         # get length info
         # logging.info(self.__class__.__name__ + ' input lengths:  ' + ''.join(str(hlens).split('\n')))
@@ -128,9 +127,8 @@ class TIMITArch(torch.nn.Module):
 
 
 
-
 class CTCArch(torch.nn.Module):
-    """E2E module
+    """E2E module, add a projection layer after blstm
 
     :param int idim: dimension of inputs
     :param int odim: dimension of outputs

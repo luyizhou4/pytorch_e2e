@@ -5,7 +5,7 @@
 #            $1 is the ${data_root}/${data_set}, ${data_set}=train/dev/test
 #            $2 is the dict
 #            $3 is the output json file            
-# @Last Modified time: 2018-10-19 20:06:16
+# @Last Modified time: 2019-01-21 14:49:56
 
 import sys
 import json
@@ -70,14 +70,14 @@ def main():
                 input_map['feat'] = feat
                 input_map['shape'] = shape
             else:
-                print("Something error happened in %s. The error line is %s. Skipped this line."%(feats_scp_path ,line))
+                print("Something error happened in %s. The error line is %s. \
+                            Skipped this line."%(feats_scp_path ,line))
                 continue
             input_list = [input_map]
             if not utt_dict.has_key(id_):
                 utt_dict[id_] = utterance_obj(id_, input_=input_list)
             else:
-                print("id contradicts: %s in feats.scp, need to check."%(id_))
-                exit(-1)
+                raise Exception("id contradicts: %s in feats.scp, need to check."%(id_))
 
     # deal with the output part
     phone_list = ['<blk>']

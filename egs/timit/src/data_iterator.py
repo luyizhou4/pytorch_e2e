@@ -2,7 +2,7 @@
 # @Author: luyizhou4
 # @Date:   2018-10-24 16:01:47
 # @Function:            
-# @Last Modified time: 2018-11-04 13:26:20
+# @Last Modified time: 2019-01-23 16:03:12
 
 import json
 import random
@@ -19,12 +19,13 @@ from torch.utils.data.sampler import Sampler
 class JsonDataset(Dataset):
     """json_file dataset."""
 
-    def __init__(self, json_path, dataset_type, sorted_type='random', delta_feats_num=2, normalized=True):
+    def __init__(self, json_path, dataset_type, sorted_type='random', delta_feats_num=2, 
+                        normalized=True, add_noise=False):
         """
         Args:
             json_file (string): Path to the json file.
             dataset_type (string): train, dev, test 
-            sorted_type (string): 'random', 'ascending', 'descending'. By default, we shuffle the dataset
+            sorted_type (string): 'random', 'ascending', 'descending' and 'none'. By default, we shuffle the dataset
             delta_feats_num (int): 0 means no delta feats, >0 will add #num delta_feats
         """
         if not isinstance(delta_feats_num, int) or isinstance(delta_feats_num, bool) or \
@@ -32,20 +33,24 @@ class JsonDataset(Dataset):
             raise ValueError("delta_feats_num should be a positive integeral value or zero, "
                              "but got delta_feats_num={}".format(batch_size))
         self.dataset_type = dataset_type
+        self.delta_feats_num = delta_feats_num
         self.normalized = normalized
+        self.add_noise = add_noise
+
         with open(json_path, 'rb') as f:
             data = json.load(f)
         self.utt_num = len(data)
         logging.info("#{} dataset total utts num: {}".format(dataset_type, self.utt_num))
 
         data_list = data.items() # list of (utt_id, json_infos)
-        self.delta_feats_num = delta_feats_num
         self.idim = int(data_list[0][1]['input'][0]['shape'][1]) * (delta_feats_num + 1)
         self.odim = int(data_list[0][1]['output'][0]['shape'][1])
         logging.info('# input dims : ' + str(self.idim))
         logging.info('# output dims: ' + str(self.odim)) 
 
-        if sorted_type == 'random':
+        if sorted_type == 'none':
+            pass
+        elif sorted_type == 'random':
             random.shuffle(data_list)
         elif sorted_type == 'ascending':
             # in lambda: data[0] is the utt_id, data[1] contains input & output infos
@@ -55,7 +60,7 @@ class JsonDataset(Dataset):
             data_list = sorted(data_list, key=lambda data: int(
                 data[1]['input'][0]['shape'][0]), reverse=True)
         else:
-            raise ValueError("sorted_type must be \'random\', \'ascending\', \'descending\', "
+            raise ValueError("sorted_type must be \'random\', \'ascending\', \'descending\', \'none\', "
                                     "but got %s"%(sorted_type))
         
         self.data_list = data_list
@@ -68,20 +73,23 @@ class JsonDataset(Dataset):
         utt_infos = self.data_list[idx]
         utt_id = utt_infos[0]
         utt_feats = kaldi_io.read_mat(utt_infos[1]['input'][0]['feat'])
+
         # add delta feats
         if self.delta_feats_num > 0:
             utt_feats = [utt_feats]
             for i in range(self.delta_feats_num):
-                delta_feats = self.delta(utt_feats[i],N=2)
+                delta_feats = self.delta(utt_feats[i], N=2)
                 utt_feats.append(delta_feats)
             utt_feats = np.concatenate(utt_feats, axis=1)
-
+            
         if self.normalized:
             # FLAG:should do in the train dataset with kaldi
-            utt_feats = (utt_feats - np.mean(utt_feats,axis=0))/np.std(utt_feats,axis=0)
+            utt_feats = (utt_feats - np.mean(utt_feats,axis=0)) / np.std(utt_feats,axis=0)
 
-        # add gaussian noise
-        if self.dataset_type == 'train':
+        # add gaussian noise every time __getitem__ is called
+        # Note that In graves, etc SPEECH RECOGNITION WITH DEEP RECURRENT NEURAL NETWORKS
+        # Weight noise was added once per training sequence, rather than at every timestep
+        if self.add_noise and self.dataset_type == 'train':
             utt_feats = np.add(utt_feats, np.random.normal(0,0.6,utt_feats.shape))
 
         transcript_ids = map(int, utt_infos[1]['output'][0]['token_id'].strip().split())

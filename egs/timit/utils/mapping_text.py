@@ -5,7 +5,7 @@
 #               $2 the mapping_dict path
 #               $3 the result text path
 #           将各个text中的48phone映射到39 phone的text           
-# @Last Modified time: 2018-10-18 17:18:25
+# @Last Modified time: 2019-01-21 14:44:47
 
 from __future__ import print_function
 import sys
@@ -30,12 +30,16 @@ def main():
             line = line.strip()
             if line == '':
                 continue
-            utt_id = line.split()[0]
-            phone_seq_list = line.split()[1:]
+            split_res = line.split()
+            utt_id = split_res[0]
+            phone_seq_list = split_res[1:]
 
             new_phone_seq_list = [utt_id]
             for phone in phone_seq_list:
-                new_phone_seq_list.append(phone_mapping[phone])
+                if phone_mapping.has_key(phone):
+                    new_phone_seq_list.append(phone_mapping[phone])
+                else:
+                    raise Exception("{} is not in dict".format(phone))
             new_text = " ".join(new_phone_seq_list)
             w_fd.write(new_text+'\n')
         w_fd.close()
